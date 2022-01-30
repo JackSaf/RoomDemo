@@ -5,11 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jacksafblaze.roomdemo.db.Subscriber
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.util.*
 
 class ActivityMainViewModel(private val repository: Repository): ViewModel() {
     val subscribers = repository.subscribers
@@ -26,9 +24,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
 
     val clearAllOrDeleteButtonText = MutableStateFlow("Clear all")
 
-    private val statusMessage = MutableStateFlow<Event<String?>>(Event(null))
-
-    val message = statusMessage.asStateFlow()
+    val subscriberUiState = MutableStateFlow(SubscriberUiState())
 
     init{
         initUpdateAndDeleteState()
@@ -43,7 +39,10 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
             val email = subscriberEmail.value
             if (!name.isNullOrBlank() && !email.isNullOrBlank()) {
                 insert(Subscriber(0, name, email))
+                subscriberName.value = null
+                subscriberEmail.value = null
             }
+
         }
     }
 
@@ -71,7 +70,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
             }
         }
     }
-    fun initUpdateAndDelete(subscriber: Subscriber){
+    fun initUpdateAndDelete(subscriber: Subscriber) = viewModelScope.launch {
         subscriberName.value = subscriber.name
         subscriberEmail.value = subscriber.email
         isUpdateOrDelete.value = true
@@ -79,26 +78,41 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
         Log.i("Flow", "value assigned")
     }
 
+    private fun postMessage(message: String) = viewModelScope.launch {
+        subscriberUiState.update { currentUiState ->
+            val messages = currentUiState.messages + UserMessage(
+            UUID.randomUUID().mostSignificantBits, message)
+            currentUiState.copy(messages = messages)
+        }
+    }
+
+    fun userMessageShown(messageId : Long){
+        subscriberUiState.update{ currentUiState ->
+            val newMessages = currentUiState.messages.filterNot{ it.id == messageId }
+            currentUiState.copy(messages = newMessages)
+        }
+    }
+
     private fun insert(subscriber: Subscriber) = viewModelScope.launch {
         repository.insert(subscriber)
-        statusMessage.value = Event("Subscriber inserted successfully")
+        postMessage("Subscriber inserted successfully")
     }
 
     private fun update(subscriber: Subscriber) = viewModelScope.launch {
         subscriber.name = subscriberName.value!!
         subscriber.email = subscriberEmail.value!!
         repository.update(subscriber)
-        statusMessage.value = Event("Subscriber updated successfully")
+        postMessage("Subscriber updated successfully")
 
     }
 
     private fun delete(subscriber: Subscriber) = viewModelScope.launch {
         repository.delete(subscriber)
-        statusMessage.value = Event("Subscriber deleted successfully")
+        postMessage("Subscriber deleted successfully")
     }
 
     private fun clearAll() = viewModelScope.launch {
         repository.clearAll()
-        statusMessage.value = Event("All subscribers deleted successfully")
+        postMessage("All subscribers deleted successfully")
     }
 }
