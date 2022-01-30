@@ -21,7 +21,6 @@ class MainActivity : AppCompatActivity() {
         val dao = SubscriberDatabase.getInstance(applicationContext).subscriberDAO()
         val viewModelFactory = ActivityMainViewModelFactory(Repository(dao))
         viewModel = ViewModelProvider(this, viewModelFactory)[ActivityMainViewModel::class.java]
-        Log.i("Flow", "viewmodel here")
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding?.viewModel = viewModel
         binding?.lifecycleOwner = this

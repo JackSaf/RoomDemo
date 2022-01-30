@@ -26,7 +26,13 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
 
     val clearAllOrDeleteButtonText = MutableStateFlow("Clear all")
 
+    private val statusMessage = MutableStateFlow<Event<String?>>(Event(null))
 
+    val message = statusMessage.asStateFlow()
+
+    init{
+        initUpdateAndDeleteState()
+    }
     fun saveOrUpdate(){
         if(isUpdateOrDelete.value){
             update(subscriberForUpdateOrDelete)
@@ -50,13 +56,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
             clearAll()
         }
     }
-
-    fun initUpdateAndDelete(subscriber: Subscriber) = viewModelScope.launch{
-        subscriberName.value = subscriber.name
-        subscriberEmail.value = subscriber.email
-        isUpdateOrDelete.value = true
-        subscriberForUpdateOrDelete = subscriber
-        Log.i("Flow", "value assigned")
+    fun initUpdateAndDeleteState() = viewModelScope.launch {
         isUpdateOrDelete.collectLatest{
             Log.i("Flow", "value collected")
             if(it){
@@ -71,9 +71,17 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
             }
         }
     }
+    fun initUpdateAndDelete(subscriber: Subscriber){
+        subscriberName.value = subscriber.name
+        subscriberEmail.value = subscriber.email
+        isUpdateOrDelete.value = true
+        subscriberForUpdateOrDelete = subscriber
+        Log.i("Flow", "value assigned")
+    }
 
     private fun insert(subscriber: Subscriber) = viewModelScope.launch {
         repository.insert(subscriber)
+        statusMessage.value = Event("Subscriber inserted successfully")
     }
 
     private fun update(subscriber: Subscriber) = viewModelScope.launch {
@@ -85,6 +93,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
 
     private fun delete(subscriber: Subscriber) = viewModelScope.launch {
         repository.delete(subscriber)
+        statusMessage.value = Event("Subscriber deleted successfully")
     }
 
     private fun clearAll() = viewModelScope.launch {
