@@ -65,7 +65,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
             }
             else{
                 saveOrUpdateButtonText.value = "save"
-                clearAllOrDeleteButtonText.value = "delete"
+                clearAllOrDeleteButtonText.value = "clear all"
                 subscriberName.value = null
                 subscriberEmail.value = null
             }
