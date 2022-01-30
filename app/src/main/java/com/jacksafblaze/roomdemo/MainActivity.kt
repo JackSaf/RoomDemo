@@ -15,31 +15,37 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: ActivityMainViewModel
+    private lateinit var adapter: MyRecyclerViewAdapter
     private var binding: ActivityMainBinding? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val dao = SubscriberDatabase.getInstance(applicationContext).subscriberDAO()
         val viewModelFactory = ActivityMainViewModelFactory(Repository(dao))
         viewModel = ViewModelProvider(this, viewModelFactory)[ActivityMainViewModel::class.java]
-        Log.i("Flow", "viewmodel here")
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding?.viewModel = viewModel
         binding?.lifecycleOwner = this
         initRecyclerView()
     }
+    fun setList (subscribers: List<Subscriber>){
+        adapter.setList(subscribers)
+    }
     private fun initRecyclerView() {
+        adapter = MyRecyclerViewAdapter()
+        { selectedItem: Subscriber ->
+            listItemClicked(selectedItem)
+        }
         binding?.subscribersRecyclerView?.layoutManager = LinearLayoutManager(this)
+        binding?.subscribersRecyclerView?.adapter = adapter
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.subscribers.collect {
-                    binding?.subscribersRecyclerView?.adapter = MyRecyclerViewAdapter(it)
-                    { selectedItem: Subscriber ->
-                        listItemClicked(selectedItem)
-                    }
+                    setList(it)
                 }
             }
         }
     }
+
     private fun listItemClicked(subscriber: Subscriber) {
             viewModel.initUpdateAndDelete(subscriber)
         }
