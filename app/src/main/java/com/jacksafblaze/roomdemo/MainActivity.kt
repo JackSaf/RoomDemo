@@ -3,14 +3,13 @@ package com.jacksafblaze.roomdemo
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.*
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.jacksafblaze.roomdemo.databinding.ActivityMainBinding
 import com.jacksafblaze.roomdemo.db.Subscriber
 import com.jacksafblaze.roomdemo.db.SubscriberDatabase
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -36,9 +35,14 @@ class MainActivity : AppCompatActivity() {
                 Log.i("Flow", "coroutine here")
                 viewModel.subscribers.collect {
                     Log.i("Flow", "Collect here")
-                    binding?.subscribersRecyclerView?.adapter = MyRecyclerViewAdapter(it)
+                    binding?.subscribersRecyclerView?.adapter = MyRecyclerViewAdapter(it,
+                                                                {selectedItem: Subscriber ->
+                                                                    listItemClicked(selectedItem)})
                 }
             }
         }
+    }
+    private fun listItemClicked(subscriber: Subscriber){
+        Toast.makeText(this, "selected name is ${subscriber.name}", Toast.LENGTH_LONG).show()
     }
 }
