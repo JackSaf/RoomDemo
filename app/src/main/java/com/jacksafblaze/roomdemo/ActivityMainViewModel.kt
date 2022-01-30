@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 class ActivityMainViewModel(private val repository: Repository): ViewModel() {
     val subscribers = repository.subscribers
 
-    var isUpdateOrDelete = MutableStateFlow(false)
+    private var isUpdateOrDelete = MutableStateFlow(false)
 
     private lateinit var subscriberForUpdateOrDelete: Subscriber
 
@@ -65,7 +65,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
             }
             else{
                 saveOrUpdateButtonText.value = "save"
-                clearAllOrDeleteButtonText.value = "delete"
+                clearAllOrDeleteButtonText.value = "clear all"
                 subscriberName.value = null
                 subscriberEmail.value = null
             }
