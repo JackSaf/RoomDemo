@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "subscriber_data_table")
 data class Subscriber(
     @PrimaryKey(autoGenerate = true)
-    val id: Int,
-    val name: String,
-    val email: String
+    var id: Int,
+    var name: String,
+    var email: String
     )
