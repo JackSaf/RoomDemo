@@ -7,8 +7,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.jacksafblaze.roomdemo.databinding.ListItemBinding
 import com.jacksafblaze.roomdemo.db.Subscriber
 
-class MyRecyclerViewAdapter(private val subscribers: List<Subscriber>, private val onClickListener: (Subscriber) -> Unit) :
+class MyRecyclerViewAdapter(private val onClickListener: (Subscriber) -> Unit) :
     RecyclerView.Adapter<MyRecyclerViewAdapter.MyViewHolder>() {
+    private val subscribers = ArrayList<Subscriber>()
     class MyViewHolder(private val binding: ListItemBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(subscriber: Subscriber, onClickListener: (Subscriber) -> Unit) {
@@ -18,6 +19,11 @@ class MyRecyclerViewAdapter(private val subscribers: List<Subscriber>, private v
                 onClickListener(subscriber)
             }
         }
+    }
+
+    fun setList(newSubscribers: List<Subscriber>){
+        subscribers.clear()
+        subscribers.addAll(newSubscribers)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {

@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var viewModel: ActivityMainViewModel
+    private lateinit var adapter: MyRecyclerViewAdapter
     private var binding: ActivityMainBinding? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,19 +27,25 @@ class MainActivity : AppCompatActivity() {
         binding?.lifecycleOwner = this
         initRecyclerView()
     }
+    fun setList (subscribers: List<Subscriber>){
+        adapter.setList(subscribers)
+    }
     private fun initRecyclerView() {
+        adapter = MyRecyclerViewAdapter()
+        { selectedItem: Subscriber ->
+            listItemClicked(selectedItem)
+        }
         binding?.subscribersRecyclerView?.layoutManager = LinearLayoutManager(this)
+        binding?.subscribersRecyclerView?.adapter = adapter
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.subscribers.collect {
-                    binding?.subscribersRecyclerView?.adapter = MyRecyclerViewAdapter(it)
-                    { selectedItem: Subscriber ->
-                        listItemClicked(selectedItem)
-                    }
+                    setList(it)
                 }
             }
         }
     }
+
     private fun listItemClicked(subscriber: Subscriber) {
             viewModel.initUpdateAndDelete(subscriber)
         }

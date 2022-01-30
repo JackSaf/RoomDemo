@@ -56,7 +56,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
             clearAll()
         }
     }
-    fun initUpdateAndDeleteState() = viewModelScope.launch {
+    private fun initUpdateAndDeleteState() = viewModelScope.launch {
         isUpdateOrDelete.collectLatest{
             Log.i("Flow", "value collected")
             if(it){
@@ -88,6 +88,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
         subscriber.name = subscriberName.value!!
         subscriber.email = subscriberEmail.value!!
         repository.update(subscriber)
+        statusMessage.value = Event("Subscriber updated successfully")
 
     }
 
@@ -98,5 +99,6 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
 
     private fun clearAll() = viewModelScope.launch {
         repository.clearAll()
+        statusMessage.value = Event("All subscribers deleted successfully")
     }
 }
