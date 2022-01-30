@@ -29,20 +29,18 @@ class MainActivity : AppCompatActivity() {
     }
     private fun initRecyclerView() {
         binding?.subscribersRecyclerView?.layoutManager = LinearLayoutManager(this)
-        Log.i("Flow", "init here")
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                Log.i("Flow", "coroutine here")
                 viewModel.subscribers.collect {
-                    Log.i("Flow", "Collect here")
-                    binding?.subscribersRecyclerView?.adapter = MyRecyclerViewAdapter(it,
-                                                                {selectedItem: Subscriber ->
-                                                                    listItemClicked(selectedItem)})
+                    binding?.subscribersRecyclerView?.adapter = MyRecyclerViewAdapter(it)
+                    { selectedItem: Subscriber ->
+                        listItemClicked(selectedItem)
+                    }
                 }
             }
         }
     }
-    private fun listItemClicked(subscriber: Subscriber){
-        Toast.makeText(this, "selected name is ${subscriber.name}", Toast.LENGTH_LONG).show()
-    }
+    private fun listItemClicked(subscriber: Subscriber) {
+            viewModel.initUpdateAndDelete(subscriber)
+        }
 }

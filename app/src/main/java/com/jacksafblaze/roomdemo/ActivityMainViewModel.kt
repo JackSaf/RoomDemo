@@ -1,5 +1,6 @@
 package com.jacksafblaze.roomdemo
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jacksafblaze.roomdemo.db.Subscriber
@@ -7,10 +8,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class ActivityMainViewModel(private val repository: Repository): ViewModel() {
     val subscribers = repository.subscribers
+
+    var isUpdateOrDelete = MutableStateFlow(false)
+
+    private lateinit var subscriberForUpdateOrDelete: Subscriber
 
     var subscriberName = MutableStateFlow<String?>(null)
 
@@ -18,36 +24,70 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
 
     val saveOrUpdateButtonText = MutableStateFlow("Save")
 
-    val clearAllOrDeleteButtonText = MutableStateFlow("Delete")
+    val clearAllOrDeleteButtonText = MutableStateFlow("Clear all")
 
 
     fun saveOrUpdate(){
-        val name = subscriberName.value
-        val email = subscriberEmail.value
-        if(!name.isNullOrBlank() && !email.isNullOrBlank()){
-            insert(Subscriber(0, name, email))
-            subscriberName.value = null
-            subscriberEmail.value = null
+        if(isUpdateOrDelete.value){
+            update(subscriberForUpdateOrDelete)
+            isUpdateOrDelete.value = false
+        }
+        else {
+            val name = subscriberName.value
+            val email = subscriberEmail.value
+            if (!name.isNullOrBlank() && !email.isNullOrBlank()) {
+                insert(Subscriber(0, name, email))
+            }
         }
     }
 
     fun clearAllOrDelete(){
-        clearAll()
+        if(isUpdateOrDelete.value){
+            delete(subscriberForUpdateOrDelete)
+            isUpdateOrDelete.value = false
+        }
+        else {
+            clearAll()
+        }
     }
 
-    fun insert(subscriber: Subscriber) = viewModelScope.launch {
+    fun initUpdateAndDelete(subscriber: Subscriber) = viewModelScope.launch{
+        subscriberName.value = subscriber.name
+        subscriberEmail.value = subscriber.email
+        isUpdateOrDelete.value = true
+        subscriberForUpdateOrDelete = subscriber
+        Log.i("Flow", "value assigned")
+        isUpdateOrDelete.collectLatest{
+            Log.i("Flow", "value collected")
+            if(it){
+                saveOrUpdateButtonText.value = "update"
+                clearAllOrDeleteButtonText.value = "delete"
+            }
+            else{
+                saveOrUpdateButtonText.value = "save"
+                clearAllOrDeleteButtonText.value = "delete"
+                subscriberName.value = null
+                subscriberEmail.value = null
+            }
+        }
+    }
+
+    private fun insert(subscriber: Subscriber) = viewModelScope.launch {
         repository.insert(subscriber)
     }
 
-    fun update(subscriber: Subscriber) = viewModelScope.launch {
+    private fun update(subscriber: Subscriber) = viewModelScope.launch {
+        subscriber.name = subscriberName.value!!
+        subscriber.email = subscriberEmail.value!!
         repository.update(subscriber)
+
     }
 
-    fun delete(subscriber: Subscriber) = viewModelScope.launch {
+    private fun delete(subscriber: Subscriber) = viewModelScope.launch {
         repository.delete(subscriber)
     }
 
-    fun clearAll() = viewModelScope.launch {
+    private fun clearAll() = viewModelScope.launch {
         repository.clearAll()
     }
 }
