@@ -1,6 +1,7 @@
 package com.jacksafblaze.roomdemo
 
 import android.util.Log
+import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jacksafblaze.roomdemo.db.Subscriber
@@ -9,7 +10,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
 
-class ActivityMainViewModel(private val repository: Repository): ViewModel() {
+class ActivityMainViewModel(private val repository: Repository) : ViewModel() {
     val subscribers = repository.subscribers
 
     private var isUpdateOrDelete = MutableStateFlow(false)
@@ -26,43 +27,39 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
 
     val subscriberUiState = MutableStateFlow(SubscriberUiState())
 
-    init{
+    init {
         initUpdateAndDeleteState()
     }
-    fun saveOrUpdate(){
-        if(isUpdateOrDelete.value){
+
+    fun saveOrUpdate() {
+        if (isUpdateOrDelete.value) {
             update(subscriberForUpdateOrDelete)
             isUpdateOrDelete.value = false
-        }
-        else {
-            val name = subscriberName.value
-            val email = subscriberEmail.value
-            if (!name.isNullOrBlank() && !email.isNullOrBlank()) {
-                insert(Subscriber(0, name, email))
+        } else {
+            if(validateInput()){
+                insert(Subscriber(0, subscriberName.value.toString(), subscriberEmail.value.toString()))
                 subscriberName.value = null
                 subscriberEmail.value = null
             }
-
         }
     }
 
-    fun clearAllOrDelete(){
-        if(isUpdateOrDelete.value){
+    fun clearAllOrDelete() {
+        if (isUpdateOrDelete.value) {
             delete(subscriberForUpdateOrDelete)
             isUpdateOrDelete.value = false
-        }
-        else {
+        } else {
             clearAll()
         }
     }
+
     private fun initUpdateAndDeleteState() = viewModelScope.launch {
-        isUpdateOrDelete.collectLatest{
+        isUpdateOrDelete.collectLatest {
             Log.i("Flow", "value collected")
-            if(it){
+            if (it) {
                 saveOrUpdateButtonText.value = "update"
                 clearAllOrDeleteButtonText.value = "delete"
-            }
-            else{
+            } else {
                 saveOrUpdateButtonText.value = "save"
                 clearAllOrDeleteButtonText.value = "clear all"
                 subscriberName.value = null
@@ -70,6 +67,7 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
             }
         }
     }
+
     fun initUpdateAndDelete(subscriber: Subscriber) = viewModelScope.launch {
         subscriberName.value = subscriber.name
         subscriberEmail.value = subscriber.email
@@ -81,38 +79,57 @@ class ActivityMainViewModel(private val repository: Repository): ViewModel() {
     private fun postMessage(message: String) = viewModelScope.launch {
         subscriberUiState.update { currentUiState ->
             val messages = currentUiState.messages + UserMessage(
-            UUID.randomUUID().mostSignificantBits, message)
+                UUID.randomUUID().mostSignificantBits, message
+            )
             currentUiState.copy(messages = messages)
         }
     }
 
-    fun userMessageShown(messageId : Long){
-        subscriberUiState.update{ currentUiState ->
-            val newMessages = currentUiState.messages.filterNot{ it.id == messageId }
+    fun userMessageShown(messageId: Long) {
+        subscriberUiState.update { currentUiState ->
+            val newMessages = currentUiState.messages.filterNot { it.id == messageId }
             currentUiState.copy(messages = newMessages)
         }
     }
 
     private fun insert(subscriber: Subscriber) = viewModelScope.launch {
-        repository.insert(subscriber)
-        postMessage("Subscriber inserted successfully")
+        val idOfInserted = repository.insert(subscriber)
+        postMessage("Subscriber $idOfInserted inserted successfully")
     }
 
     private fun update(subscriber: Subscriber) = viewModelScope.launch {
-        subscriber.name = subscriberName.value!!
-        subscriber.email = subscriberEmail.value!!
-        repository.update(subscriber)
-        postMessage("Subscriber updated successfully")
-
+        if(validateInput()){
+            subscriber.name = subscriberName.value!!
+            subscriber.email = subscriberEmail.value!!
+            val numOfUpdated = repository.update(subscriber)
+            postMessage("$numOfUpdated subscriber updated successfully")
+        }
     }
 
+    private fun validateInput(): Boolean{
+        val name = subscriberName.value
+        val email = subscriberEmail.value
+        return if (name.isNullOrBlank()) {
+            postMessage("Enter subscriber's name")
+            false
+        } else if (email.isNullOrBlank()) {
+            postMessage("Enter subscriber's email")
+            false
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            postMessage("Email address is incorrect")
+            false
+        } else {
+            true
+        }
+    }
     private fun delete(subscriber: Subscriber) = viewModelScope.launch {
-        repository.delete(subscriber)
-        postMessage("Subscriber deleted successfully")
+        val numOfDeleted = repository.delete(subscriber)
+        postMessage("$numOfDeleted subscriber deleted successfully")
     }
 
     private fun clearAll() = viewModelScope.launch {
-        repository.clearAll()
-        postMessage("All subscribers deleted successfully")
+        val numOfDeleted = repository.clearAll()
+        postMessage("$numOfDeleted subscribers deleted successfully")
     }
+
 }
